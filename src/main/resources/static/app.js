@@ -398,11 +398,21 @@ function ProductValueEntry({ product, onBack }) {
     }
   };
 
-  const handleDeleteParameter = (index) => {
-    // copying the existing array "parameters" to newParameters
-    const newParameters = [...parameters];
-    newParameters.splice(index, 1);
-    setParameters(newParameters);
+  const handleDeleteValue = async (valueId) => {
+    try {
+      const response = await fetch(`/login/products/${product.id}/values/${valueId}`, {
+        method: "DELETE",
+      });
+      
+      if (response.ok) {
+        // Refresh the saved values after successful deletion
+        fetchSavedValues();
+      } else {
+        console.error("Failed to delete value");
+      }
+    } catch (error) {
+      console.error("Error deleting value:", error);
+    }
   };
 
   const handleAddParameter = () => {
@@ -417,7 +427,17 @@ function ProductValueEntry({ product, onBack }) {
 
   const handleValueChange = (index, field, value) => {
     const newValues = [...values];
-    newValues[index][field] = value;
+    
+    if (field === "name") {
+      // If changing the name, update it for all parameters in this row
+      newValues.forEach((val, i) => {
+        newValues[i] = { ...val, name: value };
+      });
+    } else {
+      // For other fields (like value), update only the specific parameter
+      newValues[index][field] = value;
+    }
+    
     setValues(newValues);
   };
 
@@ -495,7 +515,11 @@ function ProductValueEntry({ product, onBack }) {
                     {param.parameterName}
                   </th>
                 ))}
+                <th>
+                  Delete 
+                </th>
               </tr>
+              
             </thead>
             <tbody>
               <tr>
@@ -536,6 +560,16 @@ function ProductValueEntry({ product, onBack }) {
                     />
                   </td>
                 ))}
+                <td>
+                  <button
+                    onClick={() => handleDeleteValue(values[0]?.id)}
+                    className="login-btn" 
+                    style={{ marginRight: "1rem" }}
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -589,11 +623,14 @@ function ProductValueEntry({ product, onBack }) {
                 >
                   Value
                 </th>
+                <th>
+                  Delete Value
+                </th>
               </tr>
             </thead>
             <tbody>
               {savedValues.map((value, index) => (
-                <tr key={index}>
+                <tr key={value.id}>
                   <td
                     style={{ padding: "0.75rem", border: "1px solid #dee2e6" }}
                   >
@@ -608,6 +645,16 @@ function ProductValueEntry({ product, onBack }) {
                     style={{ padding: "0.75rem", border: "1px solid #dee2e6" }}
                   >
                     {value.value}
+                  </td>
+                  <td>
+                    <button
+                      onClick={() => handleDeleteValue(value.id)}
+                      className="login-btn"
+                      style={{ marginRight: "1rem" }}
+                      type="button"
+                    >
+                      Delete
+                    </button>
                   </td>
                 </tr>
               ))}

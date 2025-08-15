@@ -78,6 +78,12 @@ public class ProductService {
             .map(this::convertToValueResponse)
             .collect(Collectors.toList());
     }
+
+    public void deleteProductValue(Long valueId) {
+        ProductValue value = valueDao.findById(valueId)
+            .orElseThrow(() -> new RuntimeException("Product value not found"));
+        valueDao.delete(value);
+    }
     
     private ProductResponse convertToResponse(Product product, List<ProductParameter> parameters) {
         ProductResponse response = new ProductResponse();

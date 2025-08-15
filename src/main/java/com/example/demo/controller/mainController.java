@@ -74,4 +74,10 @@ public class mainController {
         List<ProductValueResponse> values = productService.getProductValues(productId);
         return ResponseEntity.ok(values);
     }
+
+    @DeleteMapping("products/{productId}/values/{valueId}")
+    public ResponseEntity<String> deleteProductValue(@PathVariable Long productId, @PathVariable Long valueId) {
+        productService.deleteProductValue(valueId);
+        return ResponseEntity.ok("Value deleted successfully");
+    }
 }
