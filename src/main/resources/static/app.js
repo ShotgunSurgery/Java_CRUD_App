@@ -8,7 +8,7 @@ function LoginForm({ onLogin }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
-  const handleChange = (e) => { 
+  const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -103,6 +103,7 @@ function ProductDefinition({ onProductCreated }) {
     const count = parseInt(e.target.value);
     setParameterCount(count);
 
+    // array being declared "newParameters" with many stuff like this -> { parameterName: "", dataType: "String", range: "" }
     const newParameters = [];
     for (let i = 0; i < count; i++) {
       newParameters.push({ parameterName: "", dataType: "String", range: "" });
@@ -111,8 +112,15 @@ function ProductDefinition({ onProductCreated }) {
   };
 
   const handleParameterChange = (index, field, value) => {
+    // copying the existing array "parameters" to newParameters
     const newParameters = [...parameters];
     newParameters[index][field] = value;
+    setParameters(newParameters);
+  };
+
+  const handleParameterDelete = (index) => {
+    const newParameters = [...parameters];
+    newParameters.splice(index, 1);
     setParameters(newParameters);
   };
 
@@ -181,6 +189,7 @@ function ProductDefinition({ onProductCreated }) {
               marginTop: "1rem",
             }}
           >
+            {/* thead -> table header section */}
             <thead>
               <tr style={{ backgroundColor: "#f8f9fa" }}>
                 <th
@@ -210,9 +219,20 @@ function ProductDefinition({ onProductCreated }) {
                 >
                   Range
                 </th>
+                <th
+                  style={{
+                    padding: "0.75rem",
+                    border: "1px solid #dee2e6",
+                    textAlign: "left",
+                  }}
+                >
+                  Delete
+                </th>
               </tr>
             </thead>
+            {/* tbody -> table body section */}
             <tbody>
+              {/* // .map() - is a built in array method that takes these paramaeters - (current_objet_from_array,index_of_parameter) */}
               {parameters.map((param, index) => (
                 <tr key={index}>
                   <td
@@ -277,6 +297,16 @@ function ProductDefinition({ onProductCreated }) {
                       }}
                     />
                   </td>
+                  <td>
+                    <button
+                      onClick={() => handleParameterDelete(index)}
+                      className="login-btn"
+                      style={{ marginRight: "1rem" }}
+                      type="button"
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -314,6 +344,13 @@ function ProductValueEntry({ product, onBack }) {
     } catch (error) {
       console.error("Error fetching values:", error);
     }
+  };
+
+  const handleDeleteParameter = (index) => {
+    // copying the existing array "parameters" to newParameters
+    const newParameters = [...parameters];
+    newParameters.splice(index, 1);
+    setParameters(newParameters);
   };
 
   const handleAddParameter = () => {
@@ -561,6 +598,15 @@ function ProductList({ onProductSelect, onCreateNew }) {
         style={{ marginBottom: "2rem" }}
       >
         Create New Product
+      </button>
+
+      <button
+        onClick={onCreateNew}
+        className="login-btn"
+        style={{ marginBottom: "2rem" }}
+      >
+        
+        View and Edit Products
       </button>
 
       {loading ? (
