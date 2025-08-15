@@ -80,4 +80,31 @@ public class mainController {
         productService.deleteProductValue(valueId);
         return ResponseEntity.ok("Value deleted successfully");
     }
+
+    @PutMapping("products/{productId}/parameters")
+    public ResponseEntity<ProductResponse> updateProductParameters(@PathVariable Long productId, @RequestBody ProductRequest request) {
+        request.setProductId(productId);
+        ProductResponse response = productService.updateProductParameters(request);
+        return ResponseEntity.ok(response);
+    }
+
+    // New endpoints for individual parameter management
+    @DeleteMapping("products/{productId}/parameters/{parameterId}")
+    public ResponseEntity<String> deleteParameter(@PathVariable Long productId, @PathVariable Long parameterId) {
+        productService.deleteParameter(parameterId);
+        return ResponseEntity.ok("Parameter deleted successfully");
+    }
+
+    @PutMapping("products/{productId}/parameters/{parameterId}")
+    public ResponseEntity<ProductResponse> updateParameter(@PathVariable Long productId, @PathVariable Long parameterId, @RequestBody ProductParameterRequest request) {
+        request.setId(parameterId);
+        ProductResponse response = productService.updateParameter(parameterId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("products/{productId}/parameters")
+    public ResponseEntity<ProductResponse> addParameter(@PathVariable Long productId, @RequestBody ProductParameterRequest request) {
+        ProductResponse response = productService.addParameter(productId, request);
+        return ResponseEntity.ok(response);
+    }
 }

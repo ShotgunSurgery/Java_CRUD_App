@@ -90,14 +90,13 @@ function LoginForm({ onLogin }) {
     </div>
   );
 }
-function ViewProducts(){
+function ViewProducts({ onEditParameters, onBack, refreshTrigger }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Add useEffect to call fetchTables when component mounts
   useEffect(() => {
     fetchTables();
-  }, []);
+  }, [refreshTrigger]); // Add refreshTrigger as dependency
   
   const fetchTables = async () => {
     try{
@@ -114,6 +113,9 @@ function ViewProducts(){
   return(
       <div className="dashboard">
         <h1>Your Products</h1>
+        <button onClick={onBack} className="logout-btn" style={{ marginBottom: "2rem" }}>
+          Back to Dashboard
+        </button>
         {loading ? (
           <div className="loading">Loading...</div>
         ) : (
@@ -126,12 +128,18 @@ function ViewProducts(){
                     border: "1px solid #dee2e6",
                     borderRadius: "5px",
                     backgroundColor: "#f8f9fa"
-                  }}><button type = "button" className="login-btn">View Parameter Values</button><button type = "button" className="login-btn">View Parameter Values</button>
+                  }}>
                     <h3>{product.productName}</h3>
                     <p>{product.parameters ? product.parameters.length : 0} parameters defined</p>
-                    <button type = "button" className="login-btn">View Parameter Values</button>
-                    <button type = "button" className="login-btn">Edit Parameter Values</button>
-                    <button type = "button" className="login-btn">Edit Parameters</button>                    
+                    <button type="button" className="login-btn" style={{ marginRight: "0.5rem" }}>View Parameter Values</button>
+                    <button type="button" className="login-btn" style={{ marginRight: "0.5rem" }}>Edit Parameter Values</button>
+                    <button 
+                      type="button" 
+                      className="login-btn"
+                      onClick={() => onEditParameters(product)}
+                    >
+                      Edit Parameters
+                    </button>                    
                   </div>
                 ))}
               </div>
@@ -143,28 +151,51 @@ function ViewProducts(){
       </div>
   )
 }
-function ProductDefinition({ onProductCreated }) {
-  const [productName, setProductName] = useState("");
-  const [parameterCount, setParameterCount] = useState(1);
-  const [parameters, setParameters] = useState([
-    { parameterName: "", dataType: "String", range: "" },
-  ]);
+function ProductDefinition({ onProductCreated, editProduct = null }) {
+  const [productName, setProductName] = useState(editProduct ? editProduct.productName : "");
+  const [parameterCount, setParameterCount] = useState(editProduct ? editProduct.parameters.length : 1);
+  const [parameters, setParameters] = useState(
+    editProduct 
+      ? editProduct.parameters.map(param => ({
+          id: param.id,
+          parameterName: param.parameterName,
+          dataType: param.dataType,
+          range: param.range
+        }))
+      : [{ parameterName: "", dataType: "String", range: "" }]
+  );
   const [loading, setLoading] = useState(false);
+  const [editingParameter, setEditingParameter] = useState(null);
+
+  useEffect(() => {
+    if (editProduct) {
+      setProductName(editProduct.productName);
+      setParameterCount(editProduct.parameters.length);
+      setParameters(editProduct.parameters.map(param => ({
+        id: param.id,
+        parameterName: param.parameterName,
+        dataType: param.dataType,
+        range: param.range
+      })));
+    }
+  }, [editProduct]);
 
   const handleParameterCountChange = (e) => {
     const count = parseInt(e.target.value);
     setParameterCount(count);
 
-    // array being declared "newParameters" with many stuff like this -> { parameterName: "", dataType: "String", range: "" }
     const newParameters = [];
     for (let i = 0; i < count; i++) {
-      newParameters.push({ parameterName: "", dataType: "String", range: "" });
+      if (i < parameters.length) {
+        newParameters.push(parameters[i]);
+      } else {
+        newParameters.push({ parameterName: "", dataType: "String", range: "" });
+      }
     }
     setParameters(newParameters);
   };
 
   const handleParameterChange = (index, field, value) => {
-    // copying the existing array "parameters" to newParameters
     const newParameters = [...parameters];
     newParameters[index][field] = value;
     setParameters(newParameters);
@@ -174,6 +205,99 @@ function ProductDefinition({ onProductCreated }) {
     const newParameters = [...parameters];
     newParameters.splice(index, 1);
     setParameters(newParameters);
+    setParameterCount(newParameters.length);
+  };
+
+  const handleIndividualParameterDelete = async (parameterId, index) => {
+    if (!editProduct) {
+      // For new products, just remove from local state
+      handleParameterDelete(index);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/login/products/${editProduct.id}/parameters/${parameterId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        // Remove from local state
+        const newParameters = [...parameters];
+        newParameters.splice(index, 1);
+        setParameters(newParameters);
+        setParameterCount(newParameters.length);
+      } else {
+        console.error("Failed to delete parameter");
+      }
+    } catch (error) {
+      console.error("Error deleting parameter:", error);
+    }
+  };
+
+  const handleIndividualParameterUpdate = async (parameterId, index) => {
+    if (!editProduct) {
+      return;
+    }
+
+    const parameter = parameters[index];
+    try {
+      const response = await fetch(`/login/products/${editProduct.id}/parameters/${parameterId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          parameterName: parameter.parameterName,
+          dataType: parameter.dataType,
+          range: parameter.range
+        }),
+      });
+
+      if (response.ok) {
+        setEditingParameter(null);
+      } else {
+        console.error("Failed to update parameter");
+      }
+    } catch (error) {
+      console.error("Error updating parameter:", error);
+    }
+  };
+
+  const handleAddNewParameter = async () => {
+    if (!editProduct) {
+      // For new products, just add to local state
+      const newParameter = { parameterName: "", dataType: "String", range: "" };
+      setParameters([...parameters, newParameter]);
+      setParameterCount(parameterCount + 1);
+      return;
+    }
+
+    // For existing products, add via API
+    const newParameter = { parameterName: "", dataType: "String", range: "" };
+    try {
+      const response = await fetch(`/login/products/${editProduct.id}/parameters`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(newParameter),
+      });
+
+      if (response.ok) {
+        const updatedProduct = await response.json();
+        setParameters(updatedProduct.parameters.map(param => ({
+          id: param.id,
+          parameterName: param.parameterName,
+          dataType: param.dataType,
+          range: param.range
+        })));
+        setParameterCount(updatedProduct.parameters.length);
+      } else {
+        console.error("Failed to add parameter");
+      }
+    } catch (error) {
+      console.error("Error adding parameter:", error);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -181,21 +305,34 @@ function ProductDefinition({ onProductCreated }) {
     setLoading(true);
 
     try {
-      const response = await fetch("/login/products", {
-        method: "POST",
+      const url = editProduct 
+        ? `/login/products/${editProduct.id}/parameters`
+        : "/login/products";
+      
+      const method = editProduct ? "PUT" : "POST";
+      
+      const requestBody = {
+        productName: productName,
+        parameters: parameters,
+      };
+
+      // Only add productId for edit mode
+      if (editProduct) {
+        requestBody.productId = editProduct.id;
+      }
+      
+      const response = await fetch(url, {
+        method: method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          productName: productName,
-          parameters: parameters,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
       onProductCreated(data);
     } catch (error) {
-      console.error("Error creating product:", error);
+      console.error("Error saving product:", error);
     } finally {
       setLoading(false);
     }
@@ -203,8 +340,8 @@ function ProductDefinition({ onProductCreated }) {
 
   return (
     <div className="dashboard">
-      <h1>Define Product Parameters</h1>
-      <p>Create a new product and define its parameters</p>
+      <h1>{editProduct ? "Edit Product Parameters" : "Define Product Parameters"}</h1>
+      <p>{editProduct ? "Edit the product and its parameters" : "Create a new product and define its parameters"}</p>
 
       <form onSubmit={handleSubmit}>
         <div className="form-group">
@@ -219,21 +356,33 @@ function ProductDefinition({ onProductCreated }) {
           />
         </div>
 
-        <div className="form-group">
-          <label htmlFor="parameterCount">Number of Parameters:</label>
-          <input
-            type="number"
-            id="parameterCount"
-            min="1"
-            max="10"
-            value={parameterCount}
-            onChange={handleParameterCountChange}
-            required
-          />
-        </div>
+        {!editProduct && (
+          <div className="form-group">
+            <label htmlFor="parameterCount">Number of Parameters:</label>
+            <input
+              type="number"
+              id="parameterCount"
+              min="1"
+              max="10"
+              value={parameterCount}
+              onChange={handleParameterCountChange}
+              required
+            />
+          </div>
+        )}
 
         <div style={{ marginTop: "2rem" }}>
-          <h3>Parameter Definitions:</h3>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <h3>Parameter Definitions:</h3>
+            <button
+              type="button"
+              onClick={handleAddNewParameter}
+              className="login-btn"
+              style={{ marginLeft: "1rem" }}
+            >
+              Add Parameter
+            </button>
+          </div>
           <table
             style={{
               width: "100%",
@@ -241,7 +390,6 @@ function ProductDefinition({ onProductCreated }) {
               marginTop: "1rem",
             }}
           >
-            {/* thead -> table header section */}
             <thead>
               <tr style={{ backgroundColor: "#f8f9fa" }}>
                 <th
@@ -278,13 +426,11 @@ function ProductDefinition({ onProductCreated }) {
                     textAlign: "left",
                   }}
                 >
-                  Delete
+                  Actions
                 </th>
               </tr>
             </thead>
-            {/* tbody -> table body section */}
             <tbody>
-              {/* // .map() - is a built in array method that takes these paramaeters - (current_objet_from_array,index_of_parameter) */}
               {parameters.map((param, index) => (
                 <tr key={index}>
                   <td
@@ -349,9 +495,32 @@ function ProductDefinition({ onProductCreated }) {
                       }}
                     />
                   </td>
-                  <td>
+                  <td style={{ padding: "0.75rem", border: "1px solid #dee2e6" }}>
+                    {editProduct && param.id && (
+                      <>
+                        {editingParameter === index ? (
+                          <button
+                            onClick={() => handleIndividualParameterUpdate(param.id, index)}
+                            className="login-btn"
+                            style={{ marginRight: "0.5rem" }}
+                            type="button"
+                          >
+                            Save
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setEditingParameter(index)}
+                            className="login-btn"
+                            style={{ marginRight: "0.5rem" }}
+                            type="button"
+                          >
+                            Edit
+                          </button>
+                        )}
+                      </>
+                    )}
                     <button
-                      onClick={() => handleParameterDelete(index)}
+                      onClick={() => handleIndividualParameterDelete(param.id, index)}
                       className="login-btn"
                       style={{ marginRight: "1rem" }}
                       type="button"
@@ -371,30 +540,37 @@ function ProductDefinition({ onProductCreated }) {
           style={{ marginTop: "2rem" }}
           disabled={loading}
         >
-          {loading ? "Creating Product..." : "Create Product"}
+          {loading ? (editProduct ? "Updating Product..." : "Creating Product...") : (editProduct ? "Update Product" : "Create Product")}
         </button>
       </form>
     </div>
   );
 }
 
-function ProductValueEntry({ product, onBack }) {
+function ProductValueEntry({ product, onBack, refreshTrigger }) {
   const [showForm, setShowForm] = useState(false);
   const [values, setValues] = useState([]);
   const [savedValues, setSavedValues] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentProduct, setCurrentProduct] = useState(null); // Start with null
 
   useEffect(() => {
-    fetchSavedValues();
-  }, []);
+    fetchProductData();
+  }, [refreshTrigger]); // Remove product.id dependency, only depend on refreshTrigger
 
-  const fetchSavedValues = async () => {
+  const fetchProductData = async () => {
     try {
-      const response = await fetch(`/login/products/${product.id}/values`);
-      const data = await response.json();
-      setSavedValues(data);
+      // Always fetch fresh product data from database
+      const productResponse = await fetch(`/login/products/${product.id}`);
+      const productData = await productResponse.json();
+      setCurrentProduct(productData);
+      
+      // Fetch saved values
+      const valuesResponse = await fetch(`/login/products/${product.id}/values`);
+      const valuesData = await valuesResponse.json();
+      setSavedValues(valuesData);
     } catch (error) {
-      console.error("Error fetching values:", error);
+      console.error("Error fetching data:", error);
     }
   };
 
@@ -406,7 +582,7 @@ function ProductValueEntry({ product, onBack }) {
       
       if (response.ok) {
         // Refresh the saved values after successful deletion
-        fetchSavedValues();
+        fetchProductData();
       } else {
         console.error("Failed to delete value");
       }
@@ -416,7 +592,12 @@ function ProductValueEntry({ product, onBack }) {
   };
 
   const handleAddParameter = () => {
-    const newValues = product.parameters.map((param) => ({
+    if (!currentProduct || !currentProduct.parameters) {
+      console.error("Product data not loaded yet");
+      return;
+    }
+    
+    const newValues = currentProduct.parameters.map((param) => ({
       name: "",
       parameterId: param.id,
       value: "",
@@ -456,7 +637,7 @@ function ProductValueEntry({ product, onBack }) {
       });
 
       setShowForm(false);
-      fetchSavedValues();
+      fetchProductData();
     } catch (error) {
       console.error("Error saving values:", error);
     } finally {
@@ -464,9 +645,18 @@ function ProductValueEntry({ product, onBack }) {
     }
   };
 
+  // Show loading if product data is not yet loaded
+  if (!currentProduct) {
+    return (
+      <div className="dashboard">
+        <div className="loading">Loading product data...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard">
-      <h1>Product: {product.productName}</h1>
+      <h1>Product: {currentProduct.productName}</h1>
       <p>Manage parameter values for this product</p>
 
       <div style={{ marginBottom: "2rem" }}>
@@ -503,7 +693,7 @@ function ProductValueEntry({ product, onBack }) {
                 >
                   Name
                 </th>
-                {product.parameters.map((param) => (
+                {currentProduct.parameters.map((param) => (
                   <th
                     key={param.id}
                     style={{
@@ -539,7 +729,7 @@ function ProductValueEntry({ product, onBack }) {
                     }}
                   />
                 </td>
-                {product.parameters.map((param, index) => (
+                {currentProduct.parameters.map((param, index) => (
                   <td
                     key={param.id}
                     style={{ padding: "0.75rem", border: "1px solid #dee2e6" }}
@@ -666,13 +856,13 @@ function ProductValueEntry({ product, onBack }) {
   );
 }
 
-function ProductList({ onProductSelect, onCreateNew, onViewProducts }) {
+function ProductList({ onProductSelect, onCreateNew, onViewProducts, refreshTrigger }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [refreshTrigger]); // Add refreshTrigger as dependency
 
   const fetchProducts = async () => {
     try {
@@ -741,8 +931,10 @@ function ProductList({ onProductSelect, onCreateNew, onViewProducts }) {
 }
 
 function Dashboard({ userData, onLogout }) {
-  const [currentView, setCurrentView] = useState("main"); // main, productList, productDefinition, productValueEntry
+  const [currentView, setCurrentView] = useState("main");
   const [selectedProduct, setSelectedProduct] = useState(null);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger
 
   const handleProductCreated = (product) => {
     setSelectedProduct(product);
@@ -754,7 +946,16 @@ function Dashboard({ userData, onLogout }) {
     setCurrentView("productValueEntry");
   };
 
-  
+  const handleEditParameters = (product) => {
+    setEditingProduct(product);
+    setCurrentView("editParameters");
+  };
+
+  const handleParametersUpdated = (product) => {
+    setEditingProduct(null);
+    setRefreshTrigger(prev => prev + 1); // Trigger refresh
+    setCurrentView("viewProducts");
+  };
 
   const renderCurrentView = () => {
     switch (currentView) {
@@ -763,19 +964,35 @@ function Dashboard({ userData, onLogout }) {
           <ProductList
             onProductSelect={handleProductSelect}
             onCreateNew={() => setCurrentView("productDefinition")}
-            onViewProducts = {() => setCurrentView("viewProducts")}
+            onViewProducts={() => setCurrentView("viewProducts")}
+            refreshTrigger={refreshTrigger}
           />
         );
       case "productDefinition":
         return <ProductDefinition onProductCreated={handleProductCreated} />;
+      case "editParameters":
+        return (
+          <ProductDefinition 
+            onProductCreated={handleParametersUpdated}
+            editProduct={editingProduct}
+          />
+        );
       case "productValueEntry":
-        return <ProductValueEntry
+        return (
+          <ProductValueEntry
             product={selectedProduct}
             onBack={() => setCurrentView("productList")}
+            refreshTrigger={refreshTrigger}
           />
-        // );
-        case "viewProducts":
-          return <ViewProducts/>;
+        );
+      case "viewProducts":
+        return (
+          <ViewProducts
+            onEditParameters={handleEditParameters}
+            onBack={() => setCurrentView("productList")}
+            refreshTrigger={refreshTrigger}
+          />
+        );
       default:
         return (
           <div className="dashboard">
