@@ -126,7 +126,7 @@ function ViewProducts(){
                     border: "1px solid #dee2e6",
                     borderRadius: "5px",
                     backgroundColor: "#f8f9fa"
-                  }}>
+                  }}><button type = "button" className="login-btn">View Parameter Values</button><button type = "button" className="login-btn">View Parameter Values</button>
                     <h3>{product.productName}</h3>
                     <p>{product.parameters ? product.parameters.length : 0} parameters defined</p>
                     <button type = "button" className="login-btn">View Parameter Values</button>

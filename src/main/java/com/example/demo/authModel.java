@@ -13,6 +13,7 @@ public class authModel {
     @GeneratedValue(strategy = GenerationType.SEQUENCE)
     private Long id;
     
+    @jakarta.persistence.Column(unique = true)
     private String tokenId;
     private String password; 
 }
