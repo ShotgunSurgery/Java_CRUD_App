@@ -27,8 +27,11 @@ public class mainController {
     }
     
     @PostMapping("authenticate")
+    //wrapper class for the response
+    //@RequestBody -> http -> java object
     public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginRequest loginRequest) {
         LoginResponse response = loginService.authenticateUser(loginRequest);
+        //static factory method -> ok
         return ResponseEntity.ok(response);
     }
     

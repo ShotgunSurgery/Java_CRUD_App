@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 import com.example.demo.authModel;
 
 @Repository
+// generic type params-> authModel, Long
 public interface loginDao extends JpaRepository<authModel, Long> {
     Optional<authModel> findByTokenId(String tokenId);
 }

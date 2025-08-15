@@ -23,6 +23,9 @@ public class loginService {
     public LoginResponse authenticateUser(LoginRequest loginRequest) {
         LoginResponse response = new LoginResponse();
         
+        // in loginDao as such there is no method called findByTokenId defined by in that file we can see 
+        // that the class is extending from JpaRepository and JpaRepository has a method called findByTokenId
+        // so we can use that method to find the user by tokenId
         Optional<authModel> user = loginDao.findByTokenId(loginRequest.getTokenId());
         
         if (user.isPresent()) {
