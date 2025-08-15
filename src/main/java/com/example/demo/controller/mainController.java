@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.demo.authModel;
+import com.example.demo.Product;
 import com.example.demo.dto.*;
 import com.example.demo.service.loginService;
 import com.example.demo.service.ProductService;
@@ -26,6 +27,12 @@ public class mainController {
         return loginService.login();
     }
     
+    @GetMapping("productsonly")
+    public ResponseEntity<List<ProductResponse>> getAllProductsonly() {
+        List<ProductResponse> products = productService.getAllProducts();
+        return ResponseEntity.ok(products);
+    }   
+
     @PostMapping("authenticate")
     //wrapper class for the response
     //@RequestBody -> http -> java object

@@ -46,3 +46,6 @@ echo "MySQL setup complete!"
 echo "You can now run: ./run-dev.sh"
 echo "========================================"
 
+
+
+

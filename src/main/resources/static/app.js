@@ -90,7 +90,59 @@ function LoginForm({ onLogin }) {
     </div>
   );
 }
-
+function ViewProducts(){
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  // Add useEffect to call fetchTables when component mounts
+  useEffect(() => {
+    fetchTables();
+  }, []);
+  
+  const fetchTables = async () => {
+    try{
+      const response = await fetch("/login/productsonly");
+      const data = await response.json();
+      setProducts(data);
+    }catch(error) {
+      console.error("Error fetching Products: ", error);
+    }finally{
+      setLoading(false);
+    }
+  };
+  
+  return(
+      <div className="dashboard">
+        <h1>Your Products</h1>
+        {loading ? (
+          <div className="loading">Loading...</div>
+        ) : (
+          <div>
+            {products.length > 0 ? (
+              <div style={{ display: "grid", gap: "1rem" }}>
+                {products.map((product) => (
+                  <div key={product.id} style={{
+                    padding: "1rem",
+                    border: "1px solid #dee2e6",
+                    borderRadius: "5px",
+                    backgroundColor: "#f8f9fa"
+                  }}>
+                    <h3>{product.productName}</h3>
+                    <p>{product.parameters ? product.parameters.length : 0} parameters defined</p>
+                    <button type = "button" className="login-btn">View Parameter Values</button>
+                    <button type = "button" className="login-btn">Edit Parameter Values</button>
+                    <button type = "button" className="login-btn">Edit Parameters</button>                    
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p>No products found!</p>
+            )}
+          </div>
+        )}
+      </div>
+  )
+}
 function ProductDefinition({ onProductCreated }) {
   const [productName, setProductName] = useState("");
   const [parameterCount, setParameterCount] = useState(1);
@@ -567,7 +619,7 @@ function ProductValueEntry({ product, onBack }) {
   );
 }
 
-function ProductList({ onProductSelect, onCreateNew }) {
+function ProductList({ onProductSelect, onCreateNew, onViewProducts }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -601,7 +653,7 @@ function ProductList({ onProductSelect, onCreateNew }) {
       </button>
 
       <button
-        onClick={onCreateNew}
+        onClick={onViewProducts}
         className="login-btn"
         style={{ marginBottom: "2rem" }}
       >
@@ -655,6 +707,8 @@ function Dashboard({ userData, onLogout }) {
     setCurrentView("productValueEntry");
   };
 
+  
+
   const renderCurrentView = () => {
     switch (currentView) {
       case "productList":
@@ -662,17 +716,19 @@ function Dashboard({ userData, onLogout }) {
           <ProductList
             onProductSelect={handleProductSelect}
             onCreateNew={() => setCurrentView("productDefinition")}
+            onViewProducts = {() => setCurrentView("viewProducts")}
           />
         );
       case "productDefinition":
         return <ProductDefinition onProductCreated={handleProductCreated} />;
       case "productValueEntry":
-        return (
-          <ProductValueEntry
+        return <ProductValueEntry
             product={selectedProduct}
             onBack={() => setCurrentView("productList")}
           />
-        );
+        // );
+        case "viewProducts":
+          return <ViewProducts/>;
       default:
         return (
           <div className="dashboard">
@@ -724,4 +780,5 @@ function App() {
   );
 }
 
-ReactDOM.render(<App />, document.getElementById("root"));
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App />);

@@ -19,6 +19,8 @@ public class ProductService {
     
     @Autowired
     private ProductValueDao valueDao;
+
+    // public ProductsOnly 
     
     public ProductResponse createProduct(ProductRequest request) {
         Product product = new Product();
