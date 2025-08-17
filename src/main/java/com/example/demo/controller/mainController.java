@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import com.example.demo.authModel;
+import com.example.demo.Product;
 import com.example.demo.dto.*;
 import com.example.demo.service.loginService;
 import com.example.demo.service.ProductService;
@@ -26,9 +27,18 @@ public class mainController {
         return loginService.login();
     }
     
+    @GetMapping("productsonly")
+    public ResponseEntity<List<ProductResponse>> getAllProductsonly() {
+        List<ProductResponse> products = productService.getAllProducts();
+        return ResponseEntity.ok(products);
+    }   
+
     @PostMapping("authenticate")
+    //wrapper class for the response
+    //@RequestBody -> http -> java object
     public ResponseEntity<LoginResponse> authenticate(@RequestBody LoginRequest loginRequest) {
         LoginResponse response = loginService.authenticateUser(loginRequest);
+        //static factory method -> ok
         return ResponseEntity.ok(response);
     }
     
@@ -63,5 +73,38 @@ public class mainController {
     public ResponseEntity<List<ProductValueResponse>> getProductValues(@PathVariable Long productId) {
         List<ProductValueResponse> values = productService.getProductValues(productId);
         return ResponseEntity.ok(values);
+    }
+
+    @DeleteMapping("products/{productId}/values/{valueId}")
+    public ResponseEntity<String> deleteProductValue(@PathVariable Long productId, @PathVariable Long valueId) {
+        productService.deleteProductValue(valueId);
+        return ResponseEntity.ok("Value deleted successfully");
+    }
+
+    @PutMapping("products/{productId}/parameters")
+    public ResponseEntity<ProductResponse> updateProductParameters(@PathVariable Long productId, @RequestBody ProductRequest request) {
+        request.setProductId(productId);
+        ProductResponse response = productService.updateProductParameters(request);
+        return ResponseEntity.ok(response);
+    }
+
+    // New endpoints for individual parameter management
+    @DeleteMapping("products/{productId}/parameters/{parameterId}")
+    public ResponseEntity<String> deleteParameter(@PathVariable Long productId, @PathVariable Long parameterId) {
+        productService.deleteParameter(parameterId);
+        return ResponseEntity.ok("Parameter deleted successfully");
+    }
+
+    @PutMapping("products/{productId}/parameters/{parameterId}")
+    public ResponseEntity<ProductResponse> updateParameter(@PathVariable Long productId, @PathVariable Long parameterId, @RequestBody ProductParameterRequest request) {
+        request.setId(parameterId);
+        ProductResponse response = productService.updateParameter(parameterId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("products/{productId}/parameters")
+    public ResponseEntity<ProductResponse> addParameter(@PathVariable Long productId, @RequestBody ProductParameterRequest request) {
+        ProductResponse response = productService.addParameter(productId, request);
+        return ResponseEntity.ok(response);
     }
 }

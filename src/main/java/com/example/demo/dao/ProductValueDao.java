@@ -8,4 +8,5 @@ import java.util.List;
 @Repository
 public interface ProductValueDao extends JpaRepository<ProductValue, Long> {
     List<ProductValue> findByProductId(Long productId);
+    List<ProductValue> findByParameterId(Long parameterId);
 }

@@ -13,6 +13,8 @@ public class ProductParameter {
     
     private String parameterName;
     private String dataType;
+    
+    @Column(name = "parameter_range")
     private String range;
     
     @ManyToOne
