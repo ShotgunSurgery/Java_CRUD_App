@@ -103,6 +103,7 @@ function LoginForm({ onLogin }) {
                         disabled={loading}
                     >
                         {loading && <div className="spinner"></div>}
+                        }
                         {loading ? 'Signing in...' : 'Sign In'}
                     </button>
                 </form>
@@ -140,6 +141,7 @@ function DashboardLayout({ children, title, subtitle, breadcrumb, userData, onLo
                         {breadcrumb.map((item, index) => (
                             <React.Fragment key={index}>
                                 {index > 0 && <i className="fas fa-chevron-right"></i>}
+                                }
                                 {item.href ? (
                                     <a href="#" onClick={item.onClick}>{item.label}</a>
                                 ) : (
@@ -152,6 +154,7 @@ function DashboardLayout({ children, title, subtitle, breadcrumb, userData, onLo
                 <div className="page-header">
                     <h1 className="page-title">{title}</h1>
                     {subtitle && <p className="page-subtitle">{subtitle}</p>}
+                    }
                 </div>
                 {children}
             </main>
@@ -327,6 +330,7 @@ function ProductDefinition({ onProductCreated, onBack }) {
                             disabled={loading}
                         >
                             {loading && <div className="spinner"></div>}
+                            }
                             {loading ? 'Creating...' : 'Create Product'}
                             <i className="fas fa-check"></i>
                         </button>
@@ -487,6 +491,7 @@ function ProductValueEntry({ product, onBack }) {
                                 disabled={loading}
                             >
                                 {loading && <div className="spinner"></div>}
+                                }
                                 {loading ? 'Saving...' : 'Save Values'}
                                 <i className="fas fa-save"></i>
                             </button>
